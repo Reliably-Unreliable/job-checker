@@ -148,6 +148,16 @@ def check_suspicious_job(text):
     
     return results, score, total_matches
 
+def get_power_level(score):
+    if score >= 8:
+        return "530000"    # フリーザ（第一形態）レベル
+    elif score >= 5:
+        return "18000"     # ベジータ（地球来襲時）レベル
+    elif score >= 3:
+        return "1500"      # ラディッツレベル
+    else:
+        return "5"         # 一般人レベル
+        
 def get_risk_level(score):
     if score >= 8:
         return "超ヤベェぞ！", "red", "おめぇ、これはとんでもねぇ闇ベェトの気配を感じっぞ！絶対に応募すんじゃねぇ！すぐに警察（#9110）に通報した方がいいぞ！"
@@ -158,15 +168,13 @@ def get_risk_level(score):
     else:
         return "大丈夫そうだ！", "green", "よし！このベェトからは悪い気は感じねぇな！オラわくわくすっぞ！でも油断は禁物だぞ！"
 
-st.title("闇バイト検出チェッカー")
-
 st.write("""
 ### おっす！オラ闇バイト検出チェッカー！
 おめぇ、これだけは気ぃつけろよ！
 オラが教える危険な特徴だ：
 - 仕事の中身がボヤッとしてる
 - 男か女かにこだわりすぎ
-- お金の話が高すぎてカリン塔より高い
+- お金の話が高すぎてカリン塔より高い５
 - LINEとかSNSでしか連絡取れない
 - 身分証明書がいらねぇって言ってる
 - その日にお金がもらえるって言ってる
@@ -178,19 +186,26 @@ if st.button("いっちょ分析してみっか！"):
     if job_text.strip():
         results, score, total_matches = check_suspicious_job(job_text)
         risk_level, color, description = get_risk_level(score)
+        power_level = get_power_level(score)
         
         st.markdown(f"## リスクレベル: :{color}[{risk_level}]")
         st.write(description)
         
-        # スコアの表示
-        st.metric("戦闘力", f"{score}", f"怪しい技: {total_matches}個")
+        # 戦闘力表示
+        st.metric(
+            "戦闘力", 
+            f"{power_level}", 
+            f"スカウターが{total_matches}個の怪しい気を感知！"
+        )
         
-        if results:
-            st.markdown("### 検出された危険信号")
-            for category, info in results.items():
-                with st.expander(f"{category}（{len(info['matches'])}個の特徴を検出 - 重み付け: {info['weight']}）"):
-                    for match in info["matches"]:
-                        st.write(f"- {match}")
+        if power_level == "530000":
+            st.error("フリーザかっ！！これは最悪の闇バイトの気配だ！！")
+        elif power_level == "18000":
+            st.warning("なんと！サイヤ人級の危険な気配を感じるぞ！")
+        elif power_level == "1500":
+            st.warning("ラディッツ級の怪しい気を感じるな...")
+        else:
+            st.info("人間レベルの気配だ。大丈夫そうだな！")
 
             if score >= 3:
                 st.warning("""
