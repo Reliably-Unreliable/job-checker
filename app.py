@@ -3,116 +3,198 @@ import re
 
 def check_suspicious_job(text):
     suspicious_patterns = {
-        "給与関連": [
-            r"日給[0-9]+万",
-            r"月収[0-9]+0万",
-            r"高額収入",
-            r"日払い",
-            r"即日払い",
-            r"時給[2-9],[0-9]{3}",
-            r"短期.*高収入",
-            r"誰でも.*高収入",
-            r"簡単.*高収入",
-            r"即日.*高収入",
-            r"[0-9]+万円以上"
-        ],
-        "仕事内容": [
-            r"具体的な仕事内容は面談時",
-            r"運ぶだけ",
-            r"電話をかけるだけ",
-            r"受付だけ",
-            r"簡単作業",
-            r"誰でもできる",
-            r"詳しくはDM"
-        ],
-        "応募条件": [
-            r"身分証不要",
-            r"経験不問",
-            r"18歳以上",
-            r"秘密厳守",
-            r"本名不要",
-            r"ノルマなし",
-            r"日時自由",
-            r"即日勤務",
-            r"女性のみ",
-            r"男性のみ",
-            r"女の子募集",
-            r"男の子募集"
-        ],
-        "連絡手段": [
-            r"LINE",
-            r"ライン",
-            r"インスタ",
-            r"DM",
-            r"非通知",
-            r"個人携帯",
-            r"SNS.*連絡"
-        ],
-        "隠語": [
-            r"UD",
-            r"叩き",
-            r"逃げ",
-            r"運び屋",
-            r"掛け子",
-            r"受け子",
-            r"出し子",
-            r"取り子"
-        ]
+        "給与関連": {
+            "patterns": [
+                r"日給[0-9]+万",
+                r"月収[0-9]+0万",
+                r"高額収入",
+                r"日払い",
+                r"即日払い",
+                r"時給[2-9],[0-9]{3}",
+                r"短期.*高収入",
+                r"誰でも.*高収入",
+                r"簡単.*高収入",
+                r"即日.*高収入",
+                r"[0-9]+万円以上",
+                r"[0-9]万.*即日",
+                r"報酬.*[0-9]+%",
+                r"ボーナス.*支給",
+                r"お祝い金",
+                r"1件.*[0-9]+万"
+            ],
+            "weight": 3  # 給与関連は重要な判断材料
+        },
+        "仕事内容": {
+            "patterns": [
+                r"具体的な仕事内容は面談時",
+                r"運ぶだけ",
+                r"電話をかけるだけ",
+                r"受付だけ",
+                r"簡単作業",
+                r"誰でもできる",
+                r"詳しくはDM",
+                r"内容は確実に教えます",
+                r"商品を受け取る",
+                r"データ入力.*高額",
+                r"アンケート.*高額",
+                r"モニター.*高額",
+                r"在宅ワーク.*高額",
+                r"海外.*商品",
+                r"商品.*転売"
+            ],
+            "weight": 2
+        },
+        "応募条件": {
+            "patterns": [
+                r"身分証不要",
+                r"経験不問",
+                r"18歳以上",
+                r"秘密厳守",
+                r"本名不要",
+                r"ノルマなし",
+                r"日時自由",
+                r"即日勤務",
+                r"女性のみ",
+                r"男性のみ",
+                r"女の子募集",
+                r"男の子募集",
+                r"身バレ対策",
+                r"身バレ.*心配",
+                r"高校生.*可",
+                r"学生.*高収入"
+            ],
+            "weight": 2
+        },
+        "連絡手段": {
+            "patterns": [
+                r"LINE",
+                r"ライン",
+                r"インスタ",
+                r"DM",
+                r"非通知",
+                r"個人携帯",
+                r"SNS.*連絡",
+                r"Telegram",
+                r"テレグラム",
+                r"WhatsApp",
+                r"ワッツアップ",
+                r"メッセンジャー"
+            ],
+            "weight": 3  # SNSでの連絡は要注意
+        },
+        "隠語・危険ワード": {
+            "patterns": [
+                r"UD",
+                r"叩き",
+                r"逃げ",
+                r"運び屋",
+                r"掛け子",
+                r"受け子",
+                r"出し子",
+                r"取り子",
+                r"副業プラン",
+                r"必ず稼げる",
+                r"確実に稼げる",
+                r"絶対稼げる",
+                r"裏バイト",
+                r"闇バイト",
+                r"グレー",
+                r"アンダー",
+                r"口座作成",
+                r"口座開設.*報酬",
+                r"スマホ契約",
+                r"携帯契約",
+                r"チャトレ",
+                r"風俗",
+                r"出会い系"
+            ],
+            "weight": 4  # 隠語は最も危険
+        },
+        "その他の怪しい表現": {
+            "patterns": [
+                r"限定.*名様",
+                r"今だけ.*特別",
+                r"今なら.*特典",
+                r"期間限定.*募集",
+                r"身バレ",
+                r"確実.*安全",
+                r"安全.*確実",
+                r"完全サポート",
+                r"マニュアル完備",
+                r"即金",
+                r"即現金",
+                r"即収入"
+            ],
+            "weight": 2
+        }
     }
     
     results = {}
     score = 0
+    total_matches = 0
     
-    for category, patterns in suspicious_patterns.items():
+    for category, info in suspicious_patterns.items():
         matches = []
-        for pattern in patterns:
+        for pattern in info["patterns"]:
             if re.search(pattern, text, re.IGNORECASE):
                 matches.append(pattern)
-                score += 1
+                score += info["weight"]
+                total_matches += 1
         if matches:
-            results[category] = matches
+            results[category] = {
+                "matches": matches,
+                "weight": info["weight"]
+            }
     
-    return results, score
+    return results, score, total_matches
 
 def get_risk_level(score):
-    if score >= 5:
-        return "非常に危険", "red", "闇バイトの可能性が極めて高いです。応募は絶対に避け、警察（#9110）に通報することをお勧めします。"
+    if score >= 8:
+        return "超ヤベェぞ！", "red", "おめぇ、これはとんでもねぇ闇ベェトの気配を感じっぞ！絶対に応募すんじゃねぇ！すぐに警察（#9110）に通報した方がいいぞ！"
+    elif score >= 5:
+        return "気をつけろよ！", "orange", "おっと、これは怪しいな！闇ベェトの気がプンプンするぞ。オラならこんなベェト、受けねぇな！"
     elif score >= 3:
-        return "要注意", "orange", "闇バイトの可能性があります。応募は避けることをお勧めします。"
+        return "ちょっと怪しいぞ！", "yellow", "ん？なんか怪しい気を感じるぞ。気ぃつけた方がいいな！"
     else:
-        return "低リスク", "green", "明らかな危険信号は検出されませんでした。ただし、必ず自己判断も行ってください。"
+        return "大丈夫そうだ！", "green", "よし！このベェトからは悪い気は感じねぇな！オラわくわくすっぞ！でも油断は禁物だぞ！"
 
 st.title("闇バイト検出チェッカー")
 
 st.write("""
-### 重要なポイント
-以下の特徴が1つでもある場合は要注意です：
-- 仕事内容が具体的でない
-- 性別を限定している
-- 給料が異常に高い
-- 連絡方法がSNSである
+### おっす！オラ闇バイト検出チェッカー！
+おめぇ、これだけは気ぃつけろよ！
+オラが教える危険な特徴だ：
+- 仕事の中身がボヤッとしてる
+- 男か女かにこだわりすぎ
+- お金の話が高すぎてカリン塔より高い
+- LINEとかSNSでしか連絡取れない
+- 身分証明書がいらねぇって言ってる
+- その日にお金がもらえるって言ってる
 """)
 
 job_text = st.text_area("求人情報を入力してください...", height=200)
 
-if st.button("分析する"):
+if st.button("いっちょ分析してみっか！"):
     if job_text.strip():
-        results, score = check_suspicious_job(job_text)
+        results, score, total_matches = check_suspicious_job(job_text)
         risk_level, color, description = get_risk_level(score)
         
         st.markdown(f"## リスクレベル: :{color}[{risk_level}]")
         st.write(description)
         
+        # スコアの表示
+        st.metric("戦闘力", f"{score}", f"怪しい技: {total_matches}個")
+        
         if results:
             st.markdown("### 検出された危険信号")
-            for category, matches in results.items():
-                with st.expander(f"{category}（{len(matches)}個の特徴を検出）"):
-                    for match in matches:
+            for category, info in results.items():
+                with st.expander(f"{category}（{len(info['matches'])}個の特徴を検出 - 重み付け: {info['weight']}）"):
+                    for match in info["matches"]:
                         st.write(f"- {match}")
-            
+
             if score >= 3:
                 st.warning("""
-                ### 相談窓口
+                ### Z戦士に連絡
                 - 警察相談ダイヤル：#9110
-                - インターネット・ホットラインセンターでも通報を受け付けています
+                - インターネット・ホットラインセンターにもZ戦士が待機してっぞ！ → https://www.internethotline.jp/
                 """)
