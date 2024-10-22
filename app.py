@@ -207,7 +207,7 @@ if st.button("いっちょ分析してみっか！"):
         else:
             st.info("人間レベルの気配だ。大丈夫そうだな！")
 
-            if score >= 3:
+            if power_level >= 5:
                 st.warning("""
                 ### Z戦士に連絡
                 - 警察相談ダイヤル：#9110
